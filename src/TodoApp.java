@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 /*
 --parameters for completion
@@ -20,6 +22,7 @@ huge big project: turn this into a mobile app
 */
 public class TodoApp {
     private ArrayList<TodoItem> items = new ArrayList<>();
+    private ArrayList<JLabel> itemLabels = new ArrayList<>();
 
     private JFrame frame = new JFrame("ToDo List");
 
@@ -33,22 +36,60 @@ public class TodoApp {
     at an offset. I think this would also make it easy to collapse child trees for a cleaner overall interface
      */
     private DefaultListModel<TodoItem> itemsModel = new DefaultListModel<>();
-    private JList<TodoItem> itemsList;
+//    private JList<TodoItem> itemsList;
+
+    private MouseListener itemLabelListener = new MouseListener() {
+        @Override
+        public void mouseClicked(MouseEvent mouseEvent) {
+
+        }
+
+        @Override
+        public void mousePressed(MouseEvent mouseEvent) {
+
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent mouseEvent) {
+
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent mouseEvent) {
+
+        }
+
+        @Override
+        public void mouseExited(MouseEvent mouseEvent) {
+
+        }
+    };
 
     public TodoApp(){
         addTestData();
+
+        for (int i = 0; i < items.size(); i++) {
+            JLabel itemLabel = new JLabel();
+            addItemLabel(itemLabel, items.get(i));
+        }
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setSize(420, 650);
         frame.setResizable(true);
         frame.setLocationRelativeTo(null);
 
-        itemsList = new JList<>(itemsModel);
-        itemsList.setBackground(Color.GRAY);
+//        itemsList = new JList<>(itemsModel);
+//        itemsList.setBackground(Color.GRAY);
 
-        JScrollPane scrollPane = new JScrollPane(itemsList);
+//        JScrollPane scrollPane = new JScrollPane(itemLabels);
+        JScrollPane scrollPane = new JScrollPane();
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        for (JLabel label : itemLabels) {
+            itemsPanel.add(label);
+            System.out.println(label.getText());
+        }
 
         itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
         itemsPanel.add(scrollPane);
@@ -72,20 +113,47 @@ public class TodoApp {
         splitPane.setDividerSize(2);
 
         frame.add(splitPane);
+        frame.pack();
 
         frame.setVisible(true);
 
-        //listeners
-        itemsList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                TodoItem selectedItem = itemsList.getSelectedValue();
-                descriptText.setText(selectedItem.getDescription());
+//        //listeners
+//        itemsList.addListSelectionListener(e -> {
+//            if (!e.getValueIsAdjusting()) {
+//                TodoItem selectedItem = itemsList.getSelectedValue();
+//                descriptText.setText(selectedItem.getDescription());
+//
+//                if (!selectedItem.getChildren().isEmpty()){
+//                    //TODO: display family of todo item
+//                }
+//            }
+//        });
 
-                if (!selectedItem.getChildren().isEmpty()){
-                    //TODO: display family of todo item
-                }
+    }
+
+    private void addItemLabel(JLabel itemLabel, TodoItem item) {
+        itemLabel.setText(item.getTask());
+        itemLabel.addMouseListener(itemLabelListener);
+        itemLabels.add(itemLabel);
+        if(!item.getChildren().isEmpty()){
+            ArrayList<TodoItem> children = item.getChildren();
+            for (int i = 0; i < children.size(); i++) {
+                addItemLabel(new JLabel(), children.get(i), 0);
             }
-        });
+        }
+    }
+
+    private void addItemLabel(JLabel itemLabel, TodoItem item, int offset) {
+        itemLabel.setText(item.getTask());
+        itemLabel.addMouseListener(itemLabelListener);
+        itemLabels.add(itemLabel);
+        if(!item.getChildren().isEmpty()){
+            ArrayList<TodoItem> children = item.getChildren();
+            for (int i = 0; i < children.size(); i++) {
+                offset += 10;
+                addItemLabel(new JLabel(), children.get(i), offset);
+            }
+        }
     }
 
     private void addTestData(){
