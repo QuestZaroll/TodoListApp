@@ -17,6 +17,13 @@ public class TodoItem {
         this.description = "";
     }
 
+    public TodoItem(String task, String description){
+        this.children = new ArrayList<>();
+        this.task = task;
+        this.isDone = false;
+        this.description = description;
+    }
+
     public String getDescription() {
         return description;
     }
@@ -69,5 +76,11 @@ public class TodoItem {
         }
 
         return list;
+    }
+
+    //probably unneeded later but keeping for testing right now
+    @Override
+    public String toString(){
+        return task;
     }
 }
