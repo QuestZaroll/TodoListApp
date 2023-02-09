@@ -28,15 +28,67 @@ public class TodoApp {
 
     private JTextArea descriptText = new JTextArea("init test text");
 
+    /*this implementation presents an issue to me when I'm trying to add sub-items to the gui, I think though
+    I could change it to every task being represented in a JLabel, and add sub-items underneath the label
+    at an offset. I think this would also make it easy to collapse child trees for a cleaner overall interface
+     */
     private DefaultListModel<TodoItem> itemsModel = new DefaultListModel<>();
     private JList<TodoItem> itemsList;
 
-    private TodoItem item1 = new TodoItem("test item one", "test description for item one");
-    private TodoItem item2 = new TodoItem("test item two", "test description for item two");
-    private TodoItem childItem1 = new TodoItem("child test item", "child of item one");
-
     public TodoApp(){
+        addTestData();
 
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.setSize(420, 650);
+        frame.setResizable(true);
+        frame.setLocationRelativeTo(null);
+
+        itemsList = new JList<>(itemsModel);
+        itemsList.setBackground(Color.GRAY);
+
+        JScrollPane scrollPane = new JScrollPane(itemsList);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
+        itemsPanel.add(scrollPane);
+
+        descriptText.setEditable(false);
+        descriptText.setLineWrap(true);
+        descriptText.setWrapStyleWord(true);
+        descriptText.setBackground(Color.DARK_GRAY);
+        descriptText.setForeground(Color.BLACK);
+        descriptText.setFont(new Font("Consolas", Font.PLAIN, 40));
+
+        descriptPanel.setLayout(new BoxLayout(descriptPanel, BoxLayout.Y_AXIS));
+        descriptPanel.add(descriptText);
+
+        JSplitPane splitPane = new JSplitPane(
+                JSplitPane.VERTICAL_SPLIT,
+                itemsPanel,
+                descriptPanel);
+
+        splitPane.setResizeWeight(0.5);
+        splitPane.setDividerSize(2);
+
+        frame.add(splitPane);
+
+        frame.setVisible(true);
+
+        //listeners
+        itemsList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                TodoItem selectedItem = itemsList.getSelectedValue();
+                descriptText.setText(selectedItem.getDescription());
+
+                if (!selectedItem.getChildren().isEmpty()){
+                    //TODO: display family of todo item
+                }
+            }
+        });
+    }
+
+    private void addTestData(){
         //I know this is a terrible implementation of fizzbuzz, just making some test data for task nesting
         for (int i = 0; i < 30; i++) {
             TodoItem item = new TodoItem("test item number: " + (i + 1), "test description: " + (i + 1));
@@ -57,61 +109,6 @@ public class TodoApp {
         for (int i = 0; i < items.toArray().length; i++) {
             itemsModel.addElement(items.get(i));
         }
-        itemsList = new JList<>(itemsModel);
-
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.setSize(420, 650);
-        frame.setResizable(true);
-        frame.setLocationRelativeTo(null);
-
-        JScrollPane scrollPane = new JScrollPane(itemsList);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-
-        itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
-        itemsPanel.add(scrollPane);
-
-        itemsList.setBackground(Color.GRAY);
-
-        descriptText.setEditable(false);
-        descriptText.setLineWrap(true);
-        descriptText.setWrapStyleWord(true);
-        descriptText.setBackground(Color.DARK_GRAY);
-        descriptText.setForeground(Color.BLACK);
-
-        descriptText.setFont(new Font("Consolas", Font.PLAIN, 40));
-
-        descriptPanel.setLayout(new BoxLayout(descriptPanel, BoxLayout.Y_AXIS));
-        descriptPanel.add(descriptText);
-
-        JSplitPane splitPane = new JSplitPane(
-                JSplitPane.VERTICAL_SPLIT,
-                itemsPanel,
-                descriptPanel);
-
-        splitPane.setResizeWeight(0.5);
-        splitPane.setDividerSize(2);
-
-        frame.add(splitPane);
-
-        frame.setVisible(true);
-
-        itemsList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                TodoItem selectedItem = itemsList.getSelectedValue();
-                descriptText.setText(selectedItem.getDescription());
-
-                if (!selectedItem.getChildren().isEmpty()){
-                    ArrayList<TodoItem> testList = selectedItem.getFamily();
-                    for (TodoItem t : testList) {
-                        System.out.println(t.getTask() + ";\n Description: " + t.getDescription());
-                    }
-                }
-            }
-        });
-    }
-
-    public void displayChildren(){
 
     }
 }
