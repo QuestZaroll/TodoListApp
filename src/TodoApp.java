@@ -3,6 +3,7 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
+
 /*
 --parameters for completion
 app should be able to save, load, and create new to-do lists.
@@ -21,6 +22,7 @@ implement style changing for fonts and whatnot
 huge big project: turn this into a mobile app
 */
 public class TodoApp {
+    //you might actually need to change this to a map instead
     private ArrayList<TodoItem> items = new ArrayList<>();
     private ArrayList<JLabel> itemLabels = new ArrayList<>();
 
@@ -31,16 +33,18 @@ public class TodoApp {
 
     private JTextArea descriptText = new JTextArea("init test text");
 
-    /*this implementation presents an issue to me when I'm trying to add sub-items to the gui, I think though
-    I could change it to every task being represented in a JLabel, and add sub-items underneath the label
-    at an offset. I think this would also make it easy to collapse child trees for a cleaner overall interface
-     */
-    private DefaultListModel<TodoItem> itemsModel = new DefaultListModel<>();
-//    private JList<TodoItem> itemsList;
-
     private MouseListener itemLabelListener = new MouseListener() {
         @Override
         public void mouseClicked(MouseEvent mouseEvent) {
+            if(mouseEvent.getButton() == 1){
+                if(mouseEvent.getSource().getClass() == JLabel.class){
+                    JLabel label = (JLabel) mouseEvent.getSource();
+                    if(itemLabels.contains(label)){
+                        //TODO: find a way to get the associated TodoItem from the label so we can set the description to the clicked item
+                        descriptText.setText(label.getText());
+                    }
+                }
+            }
 
         }
 
@@ -68,9 +72,9 @@ public class TodoApp {
     public TodoApp(){
         addTestData();
 
-        for (int i = 0; i < items.size(); i++) {
+        for (TodoItem item : items) {
             JLabel itemLabel = new JLabel();
-            addItemLabel(itemLabel, items.get(i));
+            addItemLabel(itemLabel, item);
         }
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -78,21 +82,15 @@ public class TodoApp {
         frame.setResizable(true);
         frame.setLocationRelativeTo(null);
 
-//        itemsList = new JList<>(itemsModel);
-//        itemsList.setBackground(Color.GRAY);
-
-//        JScrollPane scrollPane = new JScrollPane(itemLabels);
-        JScrollPane scrollPane = new JScrollPane();
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
 
         for (JLabel label : itemLabels) {
             itemsPanel.add(label);
-            System.out.println(label.getText());
         }
 
-        itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
-        itemsPanel.add(scrollPane);
+        JScrollPane scrollPane = new JScrollPane(itemsPanel);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
         descriptText.setEditable(false);
         descriptText.setLineWrap(true);
@@ -106,39 +104,26 @@ public class TodoApp {
 
         JSplitPane splitPane = new JSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
-                itemsPanel,
+                scrollPane,
                 descriptPanel);
 
         splitPane.setResizeWeight(0.5);
         splitPane.setDividerSize(2);
 
         frame.add(splitPane);
-        frame.pack();
 
         frame.setVisible(true);
 
-//        //listeners
-//        itemsList.addListSelectionListener(e -> {
-//            if (!e.getValueIsAdjusting()) {
-//                TodoItem selectedItem = itemsList.getSelectedValue();
-//                descriptText.setText(selectedItem.getDescription());
-//
-//                if (!selectedItem.getChildren().isEmpty()){
-//                    //TODO: display family of todo item
-//                }
-//            }
-//        });
-
     }
 
-    private void addItemLabel(JLabel itemLabel, TodoItem item) {
+    public void addItemLabel(JLabel itemLabel, TodoItem item) {
         itemLabel.setText(item.getTask());
         itemLabel.addMouseListener(itemLabelListener);
         itemLabels.add(itemLabel);
         if(!item.getChildren().isEmpty()){
             ArrayList<TodoItem> children = item.getChildren();
-            for (int i = 0; i < children.size(); i++) {
-                addItemLabel(new JLabel(), children.get(i), 0);
+            for (TodoItem child : children) {
+                addItemLabel(new JLabel(), child, 0);
             }
         }
     }
@@ -146,12 +131,17 @@ public class TodoApp {
     private void addItemLabel(JLabel itemLabel, TodoItem item, int offset) {
         itemLabel.setText(item.getTask());
         itemLabel.addMouseListener(itemLabelListener);
+        itemLabel.setAlignmentX(offset);
+        //TODO: offset the child items by x offset in initialization
+        //in order to actually implement offsets, I may need to ditch the boxlayout in
+        //itemsPanel and just hardcode initialize everything, THEN add a new
+        //repaint() method to fix the display if any changes happen to the list
         itemLabels.add(itemLabel);
         if(!item.getChildren().isEmpty()){
             ArrayList<TodoItem> children = item.getChildren();
-            for (int i = 0; i < children.size(); i++) {
+            for (TodoItem child : children) {
                 offset += 10;
-                addItemLabel(new JLabel(), children.get(i), offset);
+                addItemLabel(new JLabel(), child, offset);
             }
         }
     }
@@ -173,10 +163,5 @@ public class TodoApp {
             }
             items.add(item);
         }
-
-        for (int i = 0; i < items.toArray().length; i++) {
-            itemsModel.addElement(items.get(i));
-        }
-
     }
 }
