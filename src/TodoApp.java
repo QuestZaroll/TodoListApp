@@ -1,6 +1,13 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.Map;
+
 /*
 --parameters for completion
 app should be able to save, load, and create new to-do lists.
@@ -19,7 +26,12 @@ implement style changing for fonts and whatnot
 huge big project: turn this into a mobile app
 */
 public class TodoApp {
+
     private ArrayList<TodoItem> items = new ArrayList<>();
+
+    //temporary, TODO: change implementation to better associate labels with items
+    private ArrayList<TodoItem> itemsWithChild = new ArrayList<>();
+    private ArrayList<JLabel> itemLabels = new ArrayList<>();
 
     private JFrame frame = new JFrame("ToDo List");
 
@@ -28,30 +40,66 @@ public class TodoApp {
 
     private JTextArea descriptText = new JTextArea("init test text");
 
-    /*this implementation presents an issue to me when I'm trying to add sub-items to the gui, I think though
-    I could change it to every task being represented in a JLabel, and add sub-items underneath the label
-    at an offset. I think this would also make it easy to collapse child trees for a cleaner overall interface
-     */
-    private DefaultListModel<TodoItem> itemsModel = new DefaultListModel<>();
-    private JList<TodoItem> itemsList;
+    private MouseListener itemLabelListener = new MouseListener() {
+        @Override
+        public void mouseClicked(MouseEvent mouseEvent) {
+            if(mouseEvent.getButton() == 1){
+                if(mouseEvent.getSource().getClass() == JLabel.class){
+                    JLabel label = (JLabel) mouseEvent.getSource();
+                    if(itemLabels.contains(label)){
+                        int index = itemLabels.indexOf(label);
+                        descriptText.setText(itemsWithChild.get(index).getDescription());
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void mousePressed(MouseEvent mouseEvent) {
+
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent mouseEvent) {
+
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent mouseEvent) {
+
+        }
+
+        @Override
+        public void mouseExited(MouseEvent mouseEvent) {
+
+        }
+    };
 
     public TodoApp(){
         addTestData();
+
+        for (TodoItem item : items) {
+            JLabel itemLabel = new JLabel();
+            addItemLabel(itemLabel, item, 0);
+        }
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setSize(420, 650);
         frame.setResizable(true);
         frame.setLocationRelativeTo(null);
 
-        itemsList = new JList<>(itemsModel);
-        itemsList.setBackground(Color.GRAY);
+        itemsPanel.setLayout(null);
 
-        JScrollPane scrollPane = new JScrollPane(itemsList);
+        for (JLabel label : itemLabels) {
+            itemsPanel.add(label);
+        }
+
+        itemsPanel.setPreferredSize(new Dimension(frame.getWidth() - 50, itemLabels.size() * 20));
+
+        JScrollPane scrollPane = new JScrollPane(itemsPanel);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-
-        itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
-        itemsPanel.add(scrollPane);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(9);
 
         descriptText.setEditable(false);
         descriptText.setLineWrap(true);
@@ -65,7 +113,7 @@ public class TodoApp {
 
         JSplitPane splitPane = new JSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
-                itemsPanel,
+                scrollPane,
                 descriptPanel);
 
         splitPane.setResizeWeight(0.5);
@@ -75,17 +123,24 @@ public class TodoApp {
 
         frame.setVisible(true);
 
-        //listeners
-        itemsList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                TodoItem selectedItem = itemsList.getSelectedValue();
-                descriptText.setText(selectedItem.getDescription());
+    }
 
-                if (!selectedItem.getChildren().isEmpty()){
-                    //TODO: display family of todo item
-                }
+    public void addItemLabel(JLabel itemLabel, TodoItem item, int offset) {
+        itemLabel.setText(item.getTask());
+        itemLabel.addMouseListener(itemLabelListener);
+        itemLabels.add(itemLabel);
+        itemsWithChild.add(item);
+
+        int index = itemLabels.indexOf(itemLabel);
+        itemLabel.setBounds(15 * offset, 20 * index, 200, 20);
+
+        if(!item.getChildren().isEmpty()){
+            ArrayList<TodoItem> children = item.getChildren();
+            for (TodoItem child : children) {
+                offset += 1;
+                addItemLabel(new JLabel(), child, offset);
             }
-        });
+        }
     }
 
     private void addTestData(){
@@ -96,19 +151,14 @@ public class TodoApp {
                 TodoItem childFizz = new TodoItem("Child fizz for item: " + (i + 1), "Fizz!");
                 item.addChild(childFizz);
                 if((i + 1) % 5 == 0){
-                    TodoItem childFizzBuzz = new TodoItem("child fizzbuzz for item: " + (i + 1), "FizzBuzz!");
+                    TodoItem childFizzBuzz = new TodoItem("Child fizzbuzz for item: " + (i + 1), "FizzBuzz!");
                     childFizz.addChild(childFizzBuzz);
                 }
             }else if ((i + 1) % 5 == 0){
-                TodoItem childBuzz = new TodoItem("child buzz for item: " + (i + 1), "Buzz!");
+                TodoItem childBuzz = new TodoItem("Child buzz for item: " + (i + 1), "Buzz!");
                 item.addChild(childBuzz);
             }
             items.add(item);
         }
-
-        for (int i = 0; i < items.toArray().length; i++) {
-            itemsModel.addElement(items.get(i));
-        }
-
     }
 }
