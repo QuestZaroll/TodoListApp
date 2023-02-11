@@ -3,6 +3,9 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.Map;
 
 /*
 --parameters for completion
@@ -22,8 +25,11 @@ implement style changing for fonts and whatnot
 huge big project: turn this into a mobile app
 */
 public class TodoApp {
-    //you might actually need to change this to a map instead
+
     private ArrayList<TodoItem> items = new ArrayList<>();
+
+    //temporary, TODO: change implementation to better associate labels with items
+    private ArrayList<TodoItem> itemsWithChild = new ArrayList<>();
     private ArrayList<JLabel> itemLabels = new ArrayList<>();
 
     private JFrame frame = new JFrame("ToDo List");
@@ -40,8 +46,8 @@ public class TodoApp {
                 if(mouseEvent.getSource().getClass() == JLabel.class){
                     JLabel label = (JLabel) mouseEvent.getSource();
                     if(itemLabels.contains(label)){
-                        //TODO: find a way to get the associated TodoItem from the label so we can set the description to the clicked item
-                        descriptText.setText(label.getText());
+                        int index = itemLabels.indexOf(label);
+                        descriptText.setText(itemsWithChild.get(index).getDescription());
                     }
                 }
             }
@@ -82,15 +88,18 @@ public class TodoApp {
         frame.setResizable(true);
         frame.setLocationRelativeTo(null);
 
-        itemsPanel.setLayout(new BoxLayout(itemsPanel, BoxLayout.Y_AXIS));
+        itemsPanel.setLayout(null);
 
         for (JLabel label : itemLabels) {
             itemsPanel.add(label);
         }
 
+        itemsPanel.setPreferredSize(new Dimension(frame.getWidth() - 50, itemLabels.size() * 20));
+
         JScrollPane scrollPane = new JScrollPane(itemsPanel);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(9);
 
         descriptText.setEditable(false);
         descriptText.setLineWrap(true);
@@ -120,10 +129,15 @@ public class TodoApp {
         itemLabel.setText(item.getTask());
         itemLabel.addMouseListener(itemLabelListener);
         itemLabels.add(itemLabel);
+        itemsWithChild.add(item);
+
+        int index = itemLabels.indexOf(itemLabel);
+        itemLabel.setBounds(0, 20 * index + 1, 200, 20);
+
         if(!item.getChildren().isEmpty()){
             ArrayList<TodoItem> children = item.getChildren();
             for (TodoItem child : children) {
-                addItemLabel(new JLabel(), child, 0);
+                addItemLabel(new JLabel(), child, 1);
             }
         }
     }
@@ -137,10 +151,15 @@ public class TodoApp {
         //itemsPanel and just hardcode initialize everything, THEN add a new
         //repaint() method to fix the display if any changes happen to the list
         itemLabels.add(itemLabel);
+        itemsWithChild.add(item);
+
+        int index = itemLabels.indexOf(itemLabel);
+        itemLabel.setBounds(15 * offset, 20 * index + 1, 200, 20);
+
         if(!item.getChildren().isEmpty()){
             ArrayList<TodoItem> children = item.getChildren();
             for (TodoItem child : children) {
-                offset += 10;
+                offset += 1;
                 addItemLabel(new JLabel(), child, offset);
             }
         }
@@ -154,11 +173,11 @@ public class TodoApp {
                 TodoItem childFizz = new TodoItem("Child fizz for item: " + (i + 1), "Fizz!");
                 item.addChild(childFizz);
                 if((i + 1) % 5 == 0){
-                    TodoItem childFizzBuzz = new TodoItem("child fizzbuzz for item: " + (i + 1), "FizzBuzz!");
+                    TodoItem childFizzBuzz = new TodoItem("Child fizzbuzz for item: " + (i + 1), "FizzBuzz!");
                     childFizz.addChild(childFizzBuzz);
                 }
             }else if ((i + 1) % 5 == 0){
-                TodoItem childBuzz = new TodoItem("child buzz for item: " + (i + 1), "Buzz!");
+                TodoItem childBuzz = new TodoItem("Child buzz for item: " + (i + 1), "Buzz!");
                 item.addChild(childBuzz);
             }
             items.add(item);
