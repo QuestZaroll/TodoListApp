@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
@@ -51,7 +52,6 @@ public class TodoApp {
                     }
                 }
             }
-
         }
 
         @Override
@@ -80,7 +80,7 @@ public class TodoApp {
 
         for (TodoItem item : items) {
             JLabel itemLabel = new JLabel();
-            addItemLabel(itemLabel, item);
+            addItemLabel(itemLabel, item, 0);
         }
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -125,36 +125,14 @@ public class TodoApp {
 
     }
 
-    public void addItemLabel(JLabel itemLabel, TodoItem item) {
+    public void addItemLabel(JLabel itemLabel, TodoItem item, int offset) {
         itemLabel.setText(item.getTask());
         itemLabel.addMouseListener(itemLabelListener);
         itemLabels.add(itemLabel);
         itemsWithChild.add(item);
 
         int index = itemLabels.indexOf(itemLabel);
-        itemLabel.setBounds(0, 20 * index + 1, 200, 20);
-
-        if(!item.getChildren().isEmpty()){
-            ArrayList<TodoItem> children = item.getChildren();
-            for (TodoItem child : children) {
-                addItemLabel(new JLabel(), child, 1);
-            }
-        }
-    }
-
-    private void addItemLabel(JLabel itemLabel, TodoItem item, int offset) {
-        itemLabel.setText(item.getTask());
-        itemLabel.addMouseListener(itemLabelListener);
-        itemLabel.setAlignmentX(offset);
-        //TODO: offset the child items by x offset in initialization
-        //in order to actually implement offsets, I may need to ditch the boxlayout in
-        //itemsPanel and just hardcode initialize everything, THEN add a new
-        //repaint() method to fix the display if any changes happen to the list
-        itemLabels.add(itemLabel);
-        itemsWithChild.add(item);
-
-        int index = itemLabels.indexOf(itemLabel);
-        itemLabel.setBounds(15 * offset, 20 * index + 1, 200, 20);
+        itemLabel.setBounds(15 * offset, 20 * index, 200, 20);
 
         if(!item.getChildren().isEmpty()){
             ArrayList<TodoItem> children = item.getChildren();
