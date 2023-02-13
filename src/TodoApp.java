@@ -1,12 +1,11 @@
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.LinkedList;
-import java.util.Map;
 
 /*
 --parameters for completion
@@ -40,12 +39,20 @@ public class TodoApp {
 
     private JTextArea descriptText = new JTextArea("init test text");
 
-    private MouseListener itemLabelListener = new MouseListener() {
+    private JMenuBar menuBar = new JMenuBar();
+
+    private JMenu fileMenu = new JMenu("File");
+    private JMenuItem saveListMenu = new JMenuItem("Save List");
+    private JMenuItem openListMenu = new JMenuItem("Open List");
+    private JMenuItem newListMenu = new JMenuItem("New List");
+    private JMenuItem newItemMenu = new JMenuItem("New Item");
+
+    private MouseAdapter labelMouseAdapter = new MouseAdapter() {
         @Override
-        public void mouseClicked(MouseEvent mouseEvent) {
-            if(mouseEvent.getButton() == 1){
-                if(mouseEvent.getSource().getClass() == JLabel.class){
-                    JLabel label = (JLabel) mouseEvent.getSource();
+        public void mouseClicked(MouseEvent e) {
+            if(e.getButton() == 1){
+                if(e.getSource().getClass() == JLabel.class){
+                    JLabel label = (JLabel) e.getSource();
                     if(itemLabels.contains(label)){
                         int index = itemLabels.indexOf(label);
                         descriptText.setText(itemsWithChild.get(index).getDescription());
@@ -55,44 +62,30 @@ public class TodoApp {
         }
 
         @Override
-        public void mousePressed(MouseEvent mouseEvent) {
-
-        }
-
-        @Override
-        public void mouseReleased(MouseEvent mouseEvent) {
-
-        }
-
-        @Override
-        public void mouseEntered(MouseEvent mouseEvent) {
-
-        }
-
-        @Override
-        public void mouseExited(MouseEvent mouseEvent) {
-
+        public void mouseDragged(MouseEvent e) {
+            //TODO: implement dragging items
         }
     };
 
     public TodoApp(){
-        addTestData();
-
-        for (TodoItem item : items) {
-            JLabel itemLabel = new JLabel();
-            addItemLabel(itemLabel, item, 0);
-        }
+//        addTestData(); //temporary test data, later implement saving the last opened file
+        //to a file, and check that file upon initialization to load that list instead
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setSize(420, 650);
         frame.setResizable(true);
         frame.setLocationRelativeTo(null);
 
+        fileMenu.add(saveListMenu);
+        fileMenu.add(openListMenu);
+        fileMenu.add(newListMenu);
+        fileMenu.add(newItemMenu);
+        menuBar.add(fileMenu);
+        frame.setJMenuBar(menuBar);
+
         itemsPanel.setLayout(null);
 
-        for (JLabel label : itemLabels) {
-            itemsPanel.add(label);
-        }
+        initializeList();
 
         itemsPanel.setPreferredSize(new Dimension(frame.getWidth() - 50, itemLabels.size() * 20));
 
@@ -123,11 +116,85 @@ public class TodoApp {
 
         frame.setVisible(true);
 
+        //listeners
+        saveListMenu.addActionListener(e -> {
+            saveTodoList();
+        });
+        openListMenu.addActionListener(e ->{
+            loadTodoList();
+        });
+        newListMenu.addActionListener(e -> {
+            newTodoList();
+        });
+        newItemMenu.addActionListener(e -> {
+            addNewItem();
+        });
+    }
+
+    private void initializeList() {
+        for (TodoItem item : items) {
+            JLabel itemLabel = new JLabel();
+            addItemLabel(itemLabel, item, 0);
+        }
+
+        for (JLabel label : itemLabels) {
+            itemsPanel.add(label);
+        }
+    }
+
+    private void saveTodoList() {
+        JFileChooser fileChooser = new JFileChooser();
+
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("Text files", "txt");
+        fileChooser.setAcceptAllFileFilterUsed(false);
+        fileChooser.addChoosableFileFilter(filter);
+
+        int returnValue = fileChooser.showSaveDialog(null);
+        if(returnValue == JFileChooser.APPROVE_OPTION){
+            File selectedFile = fileChooser.getSelectedFile();
+
+            TodoListManager.saveList(selectedFile, items);
+        }
+    }
+
+    private void loadTodoList() {
+        JFileChooser fileChooser = new JFileChooser();
+
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("Text files", "txt");
+        fileChooser.setAcceptAllFileFilterUsed(false);
+        fileChooser.addChoosableFileFilter(filter);
+
+        int returnValue = fileChooser.showOpenDialog(null);
+        if(returnValue == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+
+            ArrayList<TodoItem> newList = TodoListManager.loadList(selectedFile);
+            newTodoList();
+            items = newList;
+            initializeList();
+            itemsPanel.repaint();
+            frame.repaint();
+        }
+    }
+
+    private void newTodoList() {
+        items.clear();
+        itemsWithChild.clear();
+        itemLabels.clear();
+
+        itemsPanel.removeAll();
+
+        descriptText.setText("");
+        itemsPanel.repaint();
+        frame.repaint();
+    }
+
+    private void addNewItem() {
     }
 
     public void addItemLabel(JLabel itemLabel, TodoItem item, int offset) {
         itemLabel.setText(item.getTask());
-        itemLabel.addMouseListener(itemLabelListener);
+        itemLabel.addMouseListener(labelMouseAdapter);
         itemLabels.add(itemLabel);
         itemsWithChild.add(item);
 
@@ -137,7 +204,7 @@ public class TodoApp {
         if(!item.getChildren().isEmpty()){
             ArrayList<TodoItem> children = item.getChildren();
             for (TodoItem child : children) {
-                offset += 1;
+                ++offset;
                 addItemLabel(new JLabel(), child, offset);
             }
         }
