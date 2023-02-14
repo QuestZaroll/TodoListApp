@@ -68,8 +68,31 @@ public class TodoApp {
     };
 
     public TodoApp(){
-//        addTestData(); //temporary test data, later implement saving the last opened file
+//      //temporary test data, later implement saving the last opened file
         //to a file, and check that file upon initialization to load that list instead
+        TodoItem item1 = new TodoItem("item 1", "do thing1");
+        TodoItem item1_1 = new TodoItem("sub item 1", "do thing1_1");
+        TodoItem item1_2 = new TodoItem("sub item 2", "do thing1_2");
+        TodoItem item1_2_1 = new TodoItem("sub item 1 of item 2", "do thing 1_2_1");
+        TodoItem item1_2_2 = new TodoItem("sub item 2 of item 2", "do thing1_2_2");
+        TodoItem item1_2_2_1 = new TodoItem("sub sub sub sub", "sbubby eef freef");
+        TodoItem item1_3 = new TodoItem("sub item 3", "do thing1_3");
+        TodoItem item1_3_1 = new TodoItem("sub task of 3", "do thingee");
+        TodoItem item1_3_2 = new TodoItem("sub task 2 of 3","thing do");
+        TodoItem item2 = new TodoItem("item 2", "do thing2");
+        TodoItem item2_1 = new TodoItem("item two one", "theeing doaoie");
+
+        item1.addChild(item1_1);
+        item1.addChild(item1_2);
+        item1.addChild(item1_3);
+        item1_2.addChild(item1_2_1);
+        item1_2.addChild(item1_2_2);
+        item1_2_2.addChild(item1_2_2_1);
+        item1_3.addChild(item1_3_1);
+        item1_3.addChild(item1_3_2);
+        item2.addChild(item2_1);
+        items.add(item1);
+        items.add(item2);
 
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setSize(420, 650);
@@ -86,8 +109,6 @@ public class TodoApp {
         itemsPanel.setLayout(null);
 
         initializeList();
-
-        itemsPanel.setPreferredSize(new Dimension(frame.getWidth() - 50, itemLabels.size() * 20));
 
         JScrollPane scrollPane = new JScrollPane(itemsPanel);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -140,6 +161,8 @@ public class TodoApp {
         for (JLabel label : itemLabels) {
             itemsPanel.add(label);
         }
+
+        itemsPanel.setPreferredSize(new Dimension(frame.getWidth() - 50, itemLabels.size() * 20));
     }
 
     private void saveTodoList() {
@@ -204,28 +227,9 @@ public class TodoApp {
         if(!item.getChildren().isEmpty()){
             ArrayList<TodoItem> children = item.getChildren();
             for (TodoItem child : children) {
-                ++offset;
-                addItemLabel(new JLabel(), child, offset);
+                addItemLabel(new JLabel(), child, ++offset);
+                offset--;
             }
-        }
-    }
-
-    private void addTestData(){
-        //I know this is a terrible implementation of fizzbuzz, just making some test data for task nesting
-        for (int i = 0; i < 30; i++) {
-            TodoItem item = new TodoItem("test item number: " + (i + 1), "test description: " + (i + 1));
-            if((i + 1) % 3 == 0){
-                TodoItem childFizz = new TodoItem("Child fizz for item: " + (i + 1), "Fizz!");
-                item.addChild(childFizz);
-                if((i + 1) % 5 == 0){
-                    TodoItem childFizzBuzz = new TodoItem("Child fizzbuzz for item: " + (i + 1), "FizzBuzz!");
-                    childFizz.addChild(childFizzBuzz);
-                }
-            }else if ((i + 1) % 5 == 0){
-                TodoItem childBuzz = new TodoItem("Child buzz for item: " + (i + 1), "Buzz!");
-                item.addChild(childBuzz);
-            }
-            items.add(item);
         }
     }
 }
