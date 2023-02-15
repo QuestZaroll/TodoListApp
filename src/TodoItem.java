@@ -50,10 +50,7 @@ public class TodoItem {
     }
 
     public TodoItem getParent(){
-        if(parent == null){
-            return new TodoItem("No Parent");
-        }
-        return parent;
+        return parent; //can be null!
     }
 
     public String getTask(){

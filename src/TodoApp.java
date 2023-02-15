@@ -162,6 +162,12 @@ public class TodoApp {
             itemsPanel.add(label);
         }
 
+        // TODO: 2/15/2023
+        /*
+        current width setting does not support extremely indented sub-tasks, as they
+        will simply go outside of the preferred size without a horizontal
+        scrollbar ever appearing
+         */
         itemsPanel.setPreferredSize(new Dimension(frame.getWidth() - 50, itemLabels.size() * 20));
     }
 

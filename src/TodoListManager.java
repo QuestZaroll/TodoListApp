@@ -4,65 +4,58 @@ import java.util.ArrayList;
 public class TodoListManager {
 
     public static ArrayList<TodoItem> loadList(File file) {
-        ArrayList<TodoItem> list = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))){
+        ArrayList<TodoItem> items = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
-            while ((line = reader.readLine()) != null){
-                TodoItem item = loadTodoItem(reader, line, 0);
-                list.add(item);
+            TodoItem currentItem = null;
+            int currentIndent = 0;
+            while ((line = reader.readLine()) != null) {
+                int indentLevel = getIndentLevel(line);
+                String[] parts = line.trim().split("::");
+                String task = parts[0];
+                String description = parts[1];
+                boolean isDone = Boolean.parseBoolean(parts[2]);
+
+                TodoItem item = new TodoItem(task, description);
+                item.setDone(isDone);
+
+                if (indentLevel == 0) {
+                    items.add(item);
+                    currentItem = item;
+                    currentIndent = 0;
+                } else if (indentLevel == currentIndent + 1) {
+                    currentItem.addChild(item);
+                    currentItem = item;
+                    currentIndent++;
+                } else if (indentLevel <= currentIndent) {
+                    int levelDiff = currentIndent - indentLevel + 1;
+                    for (int i = 0; i < levelDiff; i++) {
+                        currentItem = currentItem.getParent();
+                        currentIndent--;
+                    }
+                    currentItem.addChild(item);
+                    currentItem = item;
+                    currentIndent++;
+                }
             }
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        return list;
+        return items;
     }
 
-    private static TodoItem loadTodoItem(BufferedReader reader, String line, int level) throws IOException {
-        String[] parts = line.split("::");
-        TodoItem item = new TodoItem(parts[0], parts[1]);
-        boolean isDone = parts[2].equals("true");
-        item.setDone(isDone);
-
-        // TODO: 2/13/2023 fix load bug
-        /*
-        potential fix: we need to track the current sub-level, and increment the tabs accordingly
-        then as we work our way back, we need to decrement it. this way, the expected tab levels for each
-        item will be as follows
-        item 1 -- 0
-            item 1.1 -- 1
-            item 1.2 -- 1
-            item 1.3 -- 1
-                item 1.3.1 -- 2
-            item 1.4 -- 1
-        item 2 -- 0
-            item 2.1 -- 1
-
-         a sample execution would be:
-         load item 1, check to see if next line has indentation
-            item has indentation above current level, add to item 1 children
-            next item is not above current level, add to item 1 children
-            next item is not above current level, add to item 1 children
-                next item is above current level, add to item 1.3 children
-                next item is below current level,
-            add to item 1 children
-            next item is below current level
-        load item 2 as a root item, check children
-            above current level, add to item 2 children
-        no more items, close reader
-         */
-        reader.mark(100);
-        boolean isChild = reader.read() == '\t';
-        if(isChild){
-            level++;
+    private static int getIndentLevel(String line) {
+        int count = 0;
+        for (char c : line.toCharArray()) {
+            if (c == '\t') {
+                count++;
+            } else {
+                break;
+            }
         }
-        reader.reset();
-        if(level > 0) {
-            line = reader.readLine();
-            TodoItem child = loadTodoItem(reader, line, --level);
-            item.addChild(child);
-        }
-        return item;
+        return count;
     }
+
 
     public static void saveList(File file, ArrayList<TodoItem> list){
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
