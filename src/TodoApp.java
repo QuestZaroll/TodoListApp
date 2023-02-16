@@ -4,12 +4,11 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 
 /*
 --parameters for completion
-app should be able to save, load, and create new to-do lists.
+app should be able to save, load, and create new to-do lists. !*! completed !*!
 new items should be able to be added either through a menu option or right-click.
 additionally, sub-items should be able to be added to each to-do item.
 --
@@ -29,7 +28,7 @@ public class TodoApp {
     private ArrayList<TodoItem> items = new ArrayList<>();
 
     //temporary, TODO: change implementation to better associate labels with items
-    private ArrayList<TodoItem> itemsWithChild = new ArrayList<>();
+    private ArrayList<TodoItem> itemsWithLabels = new ArrayList<>();
     private ArrayList<JLabel> itemLabels = new ArrayList<>();
 
     private JFrame frame = new JFrame("ToDo List");
@@ -47,6 +46,11 @@ public class TodoApp {
     private JMenuItem newListMenu = new JMenuItem("New List");
     private JMenuItem newItemMenu = new JMenuItem("New Item");
 
+    private JPopupMenu popupMenu = new JPopupMenu();
+    private JMenuItem editItemPop = new JMenuItem("Edit");
+    private JMenuItem subItemPop = new JMenuItem("Add sub-item");
+    private JMenuItem deleteItemPop = new JMenuItem("Delete");
+
     private MouseAdapter labelMouseAdapter = new MouseAdapter() {
         @Override
         public void mouseClicked(MouseEvent e) {
@@ -55,8 +59,14 @@ public class TodoApp {
                     JLabel label = (JLabel) e.getSource();
                     if(itemLabels.contains(label)){
                         int index = itemLabels.indexOf(label);
-                        descriptText.setText(itemsWithChild.get(index).getDescription());
+                        descriptText.setText(itemsWithLabels.get(index).getDescription());
                     }
+                }
+            }
+            if(e.getButton() == 3){
+                if(e.getSource().getClass() == JLabel.class) {
+                    JLabel label = (JLabel) e.getSource();
+                    popupMenu.show(label, e.getX(), e.getY());
                 }
             }
         }
@@ -68,32 +78,6 @@ public class TodoApp {
     };
 
     public TodoApp(){
-//      //temporary test data, later implement saving the last opened file
-        //to a file, and check that file upon initialization to load that list instead
-        TodoItem item1 = new TodoItem("item 1", "do thing1");
-        TodoItem item1_1 = new TodoItem("sub item 1", "do thing1_1");
-        TodoItem item1_2 = new TodoItem("sub item 2", "do thing1_2");
-        TodoItem item1_2_1 = new TodoItem("sub item 1 of item 2", "do thing 1_2_1");
-        TodoItem item1_2_2 = new TodoItem("sub item 2 of item 2", "do thing1_2_2");
-        TodoItem item1_2_2_1 = new TodoItem("sub sub sub sub", "sbubby eef freef");
-        TodoItem item1_3 = new TodoItem("sub item 3", "do thing1_3");
-        TodoItem item1_3_1 = new TodoItem("sub task of 3", "do thingee");
-        TodoItem item1_3_2 = new TodoItem("sub task 2 of 3","thing do");
-        TodoItem item2 = new TodoItem("item 2", "do thing2");
-        TodoItem item2_1 = new TodoItem("item two one", "theeing doaoie");
-
-        item1.addChild(item1_1);
-        item1.addChild(item1_2);
-        item1.addChild(item1_3);
-        item1_2.addChild(item1_2_1);
-        item1_2.addChild(item1_2_2);
-        item1_2_2.addChild(item1_2_2_1);
-        item1_3.addChild(item1_3_1);
-        item1_3.addChild(item1_3_2);
-        item2.addChild(item2_1);
-        items.add(item1);
-        items.add(item2);
-
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setSize(420, 650);
         frame.setResizable(true);
@@ -105,6 +89,10 @@ public class TodoApp {
         fileMenu.add(newItemMenu);
         menuBar.add(fileMenu);
         frame.setJMenuBar(menuBar);
+
+        popupMenu.add(editItemPop);
+        popupMenu.add(subItemPop);
+        popupMenu.add(deleteItemPop);
 
         itemsPanel.setLayout(null);
 
@@ -138,6 +126,8 @@ public class TodoApp {
         frame.setVisible(true);
 
         //listeners
+
+        //File menu
         saveListMenu.addActionListener(e -> {
             saveTodoList();
         });
@@ -149,6 +139,38 @@ public class TodoApp {
         });
         newItemMenu.addActionListener(e -> {
             addNewItem();
+        });
+
+        //Right click popup
+        editItemPop.addActionListener(e -> {
+            //get the label, get the item, show a popup to edit text and descript
+            //set the label to the new text, set the TodoItem to match the input fields
+            //re-paint the panel to update changes
+            if(popupMenu.getInvoker() instanceof JLabel){
+                JLabel label = (JLabel) popupMenu.getInvoker();
+                if(itemLabels.contains(label)){
+                    int index = itemLabels.indexOf(label);
+                    ItemDialog itemDialog = new ItemDialog(frame, item -> {
+                        itemLabels.get(index).setText(item.getTask());
+                        itemsWithLabels.get(index).setTask(item.getTask());
+                        itemsWithLabels.get(index).setDescription(item.getDescription());
+                    });
+                    itemDialog.setVisible(true);
+                }
+            }
+        });
+        subItemPop.addActionListener(e -> {
+            //open dialogue box to create a new TodoItem
+            //add new TodoItem to the children of the item which was right-clicked
+            //re-initialize list to update changes
+            System.out.println("sub item clicked");
+
+        });
+        deleteItemPop.addActionListener(e -> {
+            //open "are you sure?" dialogue, if sure, remove item and label from
+            //items, itemsWithChild, and itemLabels
+            //re-initialize list to update changes
+            System.out.println("delete clicked");
         });
     }
 
@@ -208,7 +230,7 @@ public class TodoApp {
 
     private void newTodoList() {
         items.clear();
-        itemsWithChild.clear();
+        itemsWithLabels.clear();
         itemLabels.clear();
 
         itemsPanel.removeAll();
@@ -219,13 +241,18 @@ public class TodoApp {
     }
 
     private void addNewItem() {
+        // TODO: 2/15/2023
+        /*
+        bring up a dialog box to create a new item, have a field for task, and description
+        save new item to items list and re-initialize list
+         */
     }
 
     public void addItemLabel(JLabel itemLabel, TodoItem item, int offset) {
         itemLabel.setText(item.getTask());
         itemLabel.addMouseListener(labelMouseAdapter);
         itemLabels.add(itemLabel);
-        itemsWithChild.add(item);
+        itemsWithLabels.add(item);
 
         int index = itemLabels.indexOf(itemLabel);
         itemLabel.setBounds(15 * offset, 20 * index, 200, 20);
