@@ -26,10 +26,7 @@ huge big project: turn this into a mobile app
 public class TodoApp {
 
     private ArrayList<TodoItem> items = new ArrayList<>();
-
-    //temporary, TODO: change implementation to better associate labels with items
-    private ArrayList<TodoItem> itemsWithLabels = new ArrayList<>();
-    private ArrayList<JLabel> itemLabels = new ArrayList<>();
+    private ArrayList<TodoLabel> itemLabels = new ArrayList<>();
 
     private JFrame frame = new JFrame("ToDo List");
 
@@ -55,17 +52,17 @@ public class TodoApp {
         @Override
         public void mouseClicked(MouseEvent e) {
             if(e.getButton() == 1){
-                if(e.getSource().getClass() == JLabel.class){
-                    JLabel label = (JLabel) e.getSource();
+                if(e.getSource().getClass() == TodoLabel.class){
+                    TodoLabel label = (TodoLabel) e.getSource();
                     if(itemLabels.contains(label)){
                         int index = itemLabels.indexOf(label);
-                        descriptText.setText(itemsWithLabels.get(index).getDescription());
+                        descriptText.setText(itemLabels.get(index).getItem().getDescription());
                     }
                 }
             }
             if(e.getButton() == 3){
-                if(e.getSource().getClass() == JLabel.class) {
-                    JLabel label = (JLabel) e.getSource();
+                if(e.getSource().getClass() == TodoLabel.class) {
+                    TodoLabel label = (TodoLabel) e.getSource();
                     popupMenu.show(label, e.getX(), e.getY());
                 }
             }
@@ -143,28 +140,47 @@ public class TodoApp {
 
         //Right click popup
         editItemPop.addActionListener(e -> {
-            //get the label, get the item, show a popup to edit text and descript
-            //set the label to the new text, set the TodoItem to match the input fields
-            //re-paint the panel to update changes
-            if(popupMenu.getInvoker() instanceof JLabel){
-                JLabel label = (JLabel) popupMenu.getInvoker();
+            if(popupMenu.getInvoker() instanceof TodoLabel){
+                TodoLabel label = (TodoLabel) popupMenu.getInvoker();
                 if(itemLabels.contains(label)){
                     int index = itemLabels.indexOf(label);
                     ItemDialog itemDialog = new ItemDialog(frame, item -> {
                         itemLabels.get(index).setText(item.getTask());
-                        itemsWithLabels.get(index).setTask(item.getTask());
-                        itemsWithLabels.get(index).setDescription(item.getDescription());
+                        itemLabels.get(index).getItem().setTask(item.getTask());
+                        itemLabels.get(index).getItem().setDescription(item.getDescription());
+
                     });
                     itemDialog.setVisible(true);
                 }
             }
         });
-        subItemPop.addActionListener(e -> {
-            //open dialogue box to create a new TodoItem
-            //add new TodoItem to the children of the item which was right-clicked
-            //re-initialize list to update changes
-            System.out.println("sub item clicked");
 
+        subItemPop.addActionListener(e -> {
+            if(popupMenu.getInvoker() instanceof TodoLabel){
+                TodoLabel label = (TodoLabel) popupMenu.getInvoker();
+                if(itemLabels.contains(label)){
+                    int index = itemLabels.indexOf(label);
+                    ItemDialog itemDialog = new ItemDialog(frame, item -> {
+
+                        TodoItem descendant = itemLabels.get(index).getItem();
+                        TodoItem parentalUnit = descendant.getParent();
+
+                        parentalUnit = parentalUnit.getRoot();
+
+                        if(items.contains(parentalUnit)){
+                            int index1 = items.indexOf(parentalUnit);
+                            items.get(index1).findDescendant(descendant).addChild(item);
+                        }
+                    });
+
+                    itemDialog.setVisible(true);
+                    itemsPanel.removeAll();
+                    itemLabels.clear();
+                    initializeList();
+                    frame.validate();
+                    frame.repaint();
+                }
+            }
         });
         deleteItemPop.addActionListener(e -> {
             //open "are you sure?" dialogue, if sure, remove item and label from
@@ -175,21 +191,15 @@ public class TodoApp {
     }
 
     private void initializeList() {
+
         for (TodoItem item : items) {
-            JLabel itemLabel = new JLabel();
+            TodoLabel itemLabel = new TodoLabel(item);
             addItemLabel(itemLabel, item, 0);
         }
 
-        for (JLabel label : itemLabels) {
+        for (TodoLabel label : itemLabels) {
             itemsPanel.add(label);
         }
-
-        // TODO: 2/15/2023
-        /*
-        current width setting does not support extremely indented sub-tasks, as they
-        will simply go outside of the preferred size without a horizontal
-        scrollbar ever appearing
-         */
         itemsPanel.setPreferredSize(new Dimension(frame.getWidth() - 50, itemLabels.size() * 20));
     }
 
@@ -230,7 +240,6 @@ public class TodoApp {
 
     private void newTodoList() {
         items.clear();
-        itemsWithLabels.clear();
         itemLabels.clear();
 
         itemsPanel.removeAll();
@@ -248,11 +257,11 @@ public class TodoApp {
          */
     }
 
-    public void addItemLabel(JLabel itemLabel, TodoItem item, int offset) {
+    public void addItemLabel(TodoLabel itemLabel, TodoItem item, int offset) {
         itemLabel.setText(item.getTask());
         itemLabel.addMouseListener(labelMouseAdapter);
+        itemLabel.setItem(item);
         itemLabels.add(itemLabel);
-        itemsWithLabels.add(item);
 
         int index = itemLabels.indexOf(itemLabel);
         itemLabel.setBounds(15 * offset, 20 * index, 200, 20);
@@ -260,7 +269,7 @@ public class TodoApp {
         if(!item.getChildren().isEmpty()){
             ArrayList<TodoItem> children = item.getChildren();
             for (TodoItem child : children) {
-                addItemLabel(new JLabel(), child, ++offset);
+                addItemLabel(new TodoLabel(child), child, ++offset);
                 offset--;
             }
         }

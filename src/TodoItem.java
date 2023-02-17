@@ -75,6 +75,29 @@ public class TodoItem {
         return list;
     }
 
+    public TodoItem getRoot(){
+        TodoItem item = this.getParent();
+        while (item.getParent() != null){
+            item = item.getParent();
+        }
+        return item;
+    }
+
+    public TodoItem findDescendant(TodoItem item){
+        if(this == item){
+            return this;
+        }
+
+        for (TodoItem child : children) {
+            TodoItem found = child.findDescendant(item);
+            if(found != null){
+                return found;
+            }
+        }
+        //not found in this item's descendants
+        return null;
+    }
+
     //probably unneeded later but keeping for testing right now
     @Override
     public String toString(){
