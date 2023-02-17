@@ -65,7 +65,7 @@ public class TodoItem {
         return children;
     }
 
-    public ArrayList<TodoItem> getFamily(){
+    public ArrayList<TodoItem> getFamily(){//neat function but so far not-needed, consider removing
         ArrayList<TodoItem> list = new ArrayList<>(this.getChildren());
 
         for (TodoItem item : children) {
@@ -73,6 +73,32 @@ public class TodoItem {
         }
 
         return list;
+    }
+
+    public TodoItem getRoot(){
+        if(this.getParent() == null){
+            return this;
+        }
+        TodoItem item = this.getParent();
+        while (item.getParent() != null){
+            item = item.getParent();
+        }
+        return item;
+    }
+
+    public TodoItem findDescendant(TodoItem item){
+        if(this == item){
+            return this;
+        }
+
+        for (TodoItem child : children) {
+            TodoItem found = child.findDescendant(item);
+            if(found != null){
+                return found;
+            }
+        }
+        //not found in this item's descendants
+        return null;
     }
 
     //probably unneeded later but keeping for testing right now
