@@ -187,6 +187,10 @@ public class TodoApp {
     }
 
     private void deleteItem(TodoItem item) {
+        if(descriptText.getText().equals(item.getDescription())){
+            descriptText.setText("");
+        }
+
         if(item.getParent() == null){ //item is root item
             items.remove(items.get(items.indexOf(item)));
         }else {
@@ -205,14 +209,14 @@ public class TodoApp {
     }
 
     private void initializeList() {
-
         for (TodoItem item : items) {
             TodoLabel itemLabel = new TodoLabel(item);
             addItemLabel(itemLabel, item, 0);
         }
-
+        //rest of this code might be better suited in the addItemLabel function
         for (TodoLabel label : itemLabels) {
             itemsPanel.add(label);
+            itemsPanel.add(label.getCheckBox());
         }
         itemsPanel.setPreferredSize(new Dimension(frame.getWidth() - 50, itemLabels.size() * 20));
     }
@@ -282,7 +286,8 @@ public class TodoApp {
 
         int index = itemLabels.indexOf(itemLabel);
 
-        itemLabel.setBounds(15 * offset, 20 * index, 200, 20);
+        itemLabel.setBounds(20 + (15 * offset), 20 * index, 200, 20);
+        itemLabel.getCheckBox().setBounds(itemLabel.getX() - 20, itemLabel.getY(), 20, 20);
 
         if(!item.getChildren().isEmpty()){
             ArrayList<TodoItem> children = item.getChildren();

@@ -50,7 +50,7 @@ public class TodoItem {
     }
 
     public TodoItem getParent(){
-        return parent; //can be null!
+        return parent;
     }
 
     public String getTask(){
