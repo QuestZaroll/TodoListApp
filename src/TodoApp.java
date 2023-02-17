@@ -6,23 +6,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
 
-/*
---parameters for completion
-app should be able to save, load, and create new to-do lists. !*! completed !*!
-new items should be able to be added either through a menu option or right-click.
-additionally, sub-items should be able to be added to each to-do item.
---
 
---bonus items to polish app and improve user functionality
-if possible, allow restructuring the to-do lists by dragging and dropping items
-
-allow users to select a to-do item and input a description to the task itself,
-which will be displayed to the side when selected
-
-implement style changing for fonts and whatnot
-
-huge big project: turn this into a mobile app
-*/
 public class TodoApp {
 
     private ArrayList<TodoItem> items = new ArrayList<>();
@@ -33,7 +17,7 @@ public class TodoApp {
     private JPanel itemsPanel = new JPanel();
     private JPanel descriptPanel = new JPanel();
 
-    private JTextArea descriptText = new JTextArea("init test text");
+    private JTextArea descriptText = new JTextArea("Load a list or create an item :)");
 
     private JMenuBar menuBar = new JMenuBar();
 
@@ -51,7 +35,7 @@ public class TodoApp {
     private MouseAdapter labelMouseAdapter = new MouseAdapter() {
         @Override
         public void mouseClicked(MouseEvent e) {
-            if(e.getButton() == 1){
+            if(e.getButton() == 1){//left click
                 if(e.getSource().getClass() == TodoLabel.class){
                     TodoLabel label = (TodoLabel) e.getSource();
                     if(itemLabels.contains(label)){
@@ -60,7 +44,7 @@ public class TodoApp {
                     }
                 }
             }
-            if(e.getButton() == 3){
+            if(e.getButton() == 3){//right click
                 if(e.getSource().getClass() == TodoLabel.class) {
                     TodoLabel label = (TodoLabel) e.getSource();
                     popupMenu.show(label, e.getX(), e.getY());
@@ -161,33 +145,63 @@ public class TodoApp {
                 if(itemLabels.contains(label)){
                     int index = itemLabels.indexOf(label);
                     ItemDialog itemDialog = new ItemDialog(frame, item -> {
+                        //item is root item, simply add here
+                        if(items.contains(itemLabels.get(index).getItem())){
+                            items.get(items.indexOf(itemLabels.get(index).getItem())).addChild(item);
+                        }else{
+                            //this is a sub item, we must search for it
+                            TodoItem descendant = itemLabels.get(index).getItem();
+                            TodoItem parentalUnit = descendant.getParent();
 
-                        TodoItem descendant = itemLabels.get(index).getItem();
-                        TodoItem parentalUnit = descendant.getParent();
+                            if(parentalUnit.getParent() != null){
+                                parentalUnit = parentalUnit.getRoot();
+                            }
 
-                        parentalUnit = parentalUnit.getRoot();
-
-                        if(items.contains(parentalUnit)){
-                            int index1 = items.indexOf(parentalUnit);
-                            items.get(index1).findDescendant(descendant).addChild(item);
+                            if(items.contains(parentalUnit)){
+                                int index1 = items.indexOf(parentalUnit);
+                                items.get(index1).findDescendant(descendant).addChild(item);
+                            }
                         }
                     });
 
                     itemDialog.setVisible(true);
-                    itemsPanel.removeAll();
-                    itemLabels.clear();
-                    initializeList();
-                    frame.validate();
-                    frame.repaint();
+                    reDrawList();
                 }
             }
         });
         deleteItemPop.addActionListener(e -> {
-            //open "are you sure?" dialogue, if sure, remove item and label from
-            //items, itemsWithChild, and itemLabels
-            //re-initialize list to update changes
-            System.out.println("delete clicked");
+            if(popupMenu.getInvoker() instanceof TodoLabel){
+                TodoLabel label = (TodoLabel) popupMenu.getInvoker();
+                if(itemLabels.contains(label)){
+                    int result = JOptionPane.showConfirmDialog(null,
+                            "Are you sure you want to delete this item?",
+                            "Confirm Deletion",
+                            JOptionPane.YES_NO_OPTION);
+                    if(result == JOptionPane.YES_OPTION){
+                        int index = itemLabels.indexOf(label);
+                        deleteItem(itemLabels.get(index).getItem());
+                    }
+                }
+            }
         });
+    }
+
+    private void deleteItem(TodoItem item) {
+        if(item.getParent() == null){ //item is root item
+            items.remove(items.get(items.indexOf(item)));
+        }else {
+            //item was not root, we must find the item and remove it from the appropriate parent
+            TodoItem parent = item.getParent();
+
+            parent = parent.getRoot();
+
+            if(items.contains(parent)){
+                //this is convoluted, but basically we're finding the descendant in the items list,
+                //then getting the parent, then removing the descendant from the parent's children
+                items.get(items.indexOf(parent)).findDescendant(item).getParent().removeChild(item);
+            }
+        }
+        reDrawList();
     }
 
     private void initializeList() {
@@ -201,6 +215,14 @@ public class TodoApp {
             itemsPanel.add(label);
         }
         itemsPanel.setPreferredSize(new Dimension(frame.getWidth() - 50, itemLabels.size() * 20));
+    }
+
+    private void reDrawList(){
+        itemsPanel.removeAll();
+        itemLabels.clear();
+        initializeList();
+        frame.validate();
+        frame.repaint();
     }
 
     private void saveTodoList() {
@@ -232,29 +254,24 @@ public class TodoApp {
             ArrayList<TodoItem> newList = TodoListManager.loadList(selectedFile);
             newTodoList();
             items = newList;
-            initializeList();
-            itemsPanel.repaint();
-            frame.repaint();
+            reDrawList();
         }
     }
 
     private void newTodoList() {
         items.clear();
         itemLabels.clear();
-
         itemsPanel.removeAll();
-
         descriptText.setText("");
-        itemsPanel.repaint();
-        frame.repaint();
+        reDrawList();
     }
 
     private void addNewItem() {
-        // TODO: 2/15/2023
-        /*
-        bring up a dialog box to create a new item, have a field for task, and description
-        save new item to items list and re-initialize list
-         */
+        ItemDialog itemDialog = new ItemDialog(frame, item -> {
+            items.add(item);
+        });
+        itemDialog.setVisible(true);
+        reDrawList();
     }
 
     public void addItemLabel(TodoLabel itemLabel, TodoItem item, int offset) {
@@ -264,6 +281,7 @@ public class TodoApp {
         itemLabels.add(itemLabel);
 
         int index = itemLabels.indexOf(itemLabel);
+
         itemLabel.setBounds(15 * offset, 20 * index, 200, 20);
 
         if(!item.getChildren().isEmpty()){

@@ -65,7 +65,7 @@ public class TodoItem {
         return children;
     }
 
-    public ArrayList<TodoItem> getFamily(){
+    public ArrayList<TodoItem> getFamily(){//neat function but so far not-needed, consider removing
         ArrayList<TodoItem> list = new ArrayList<>(this.getChildren());
 
         for (TodoItem item : children) {
@@ -76,6 +76,9 @@ public class TodoItem {
     }
 
     public TodoItem getRoot(){
+        if(this.getParent() == null){
+            return this;
+        }
         TodoItem item = this.getParent();
         while (item.getParent() != null){
             item = item.getParent();
