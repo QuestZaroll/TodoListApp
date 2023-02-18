@@ -28,6 +28,9 @@ public class ItemDialog extends JDialog {
         pack();
         setLocationRelativeTo(parent);
 
+        descriptionArea.setLineWrap(true);
+        descriptionArea.setWrapStyleWord(true);
+
         okButton.addActionListener(e -> {
             String task = taskField.getText();
             String description = descriptionArea.getText();
@@ -42,6 +45,11 @@ public class ItemDialog extends JDialog {
         });
 
         this.listener = listener;
+    }
+
+    public void setEditorFields(TodoItem item) {
+        this.taskField.setText(item.getTask());
+        this.descriptionArea.setText(item.getDescription());
     }
 
     public interface ItemDialogListener {

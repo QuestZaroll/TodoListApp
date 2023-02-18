@@ -40,7 +40,9 @@ public class TodoApp {
                     TodoLabel label = (TodoLabel) e.getSource();
                     if(itemLabels.contains(label)){
                         int index = itemLabels.indexOf(label);
-                        descriptText.setText(itemLabels.get(index).getItem().getDescription());
+                        descriptText.setText(itemLabels.get(index).getItem().getTask() +
+                                ":\n\n" +
+                                itemLabels.get(index).getItem().getDescription());
                     }
                 }
             }
@@ -57,6 +59,10 @@ public class TodoApp {
             //TODO: implement dragging items
         }
     };
+
+    private int framePrefWidth = 0;//this variable will be used to track how
+    //wide we need to set the preferred width of the items panel,
+    //in the case that horizontal scrolling becomes necessary
 
     public TodoApp(){
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -79,25 +85,30 @@ public class TodoApp {
 
         initializeList();
 
-        JScrollPane scrollPane = new JScrollPane(itemsPanel);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(9);
+        JScrollPane itemsScrollPane = new JScrollPane(itemsPanel);
+        itemsScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        itemsScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        itemsScrollPane.getVerticalScrollBar().setUnitIncrement(9);
 
         descriptText.setEditable(false);
         descriptText.setLineWrap(true);
         descriptText.setWrapStyleWord(true);
         descriptText.setBackground(Color.DARK_GRAY);
         descriptText.setForeground(Color.BLACK);
-        descriptText.setFont(new Font("Consolas", Font.PLAIN, 40));
+        descriptText.setFont(new Font("Consolas", Font.PLAIN, 25));
 
         descriptPanel.setLayout(new BoxLayout(descriptPanel, BoxLayout.Y_AXIS));
         descriptPanel.add(descriptText);
 
+        JScrollPane descriptScrollPane = new JScrollPane(descriptText);
+        descriptScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        descriptScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        descriptScrollPane.getVerticalScrollBar().setUnitIncrement(9);
+
         JSplitPane splitPane = new JSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
-                scrollPane,
-                descriptPanel);
+                itemsScrollPane,
+                descriptScrollPane);
 
         splitPane.setResizeWeight(0.5);
         splitPane.setDividerSize(2);
@@ -132,8 +143,9 @@ public class TodoApp {
                         itemLabels.get(index).setText(item.getTask());
                         itemLabels.get(index).getItem().setTask(item.getTask());
                         itemLabels.get(index).getItem().setDescription(item.getDescription());
-
+                        reSetDescriptText(item);
                     });
+                    itemDialog.setEditorFields(itemLabels.get(index).getItem());
                     itemDialog.setVisible(true);
                 }
             }
@@ -162,9 +174,10 @@ public class TodoApp {
                                 items.get(index1).findDescendant(descendant).addChild(item);
                             }
                         }
+                        reSetDescriptText(item);
                     });
-
                     itemDialog.setVisible(true);
+
                     reDrawList();
                 }
             }
@@ -186,26 +199,8 @@ public class TodoApp {
         });
     }
 
-    private void deleteItem(TodoItem item) {
-        if(descriptText.getText().equals(item.getDescription())){
-            descriptText.setText("");
-        }
-
-        if(item.getParent() == null){ //item is root item
-            items.remove(items.get(items.indexOf(item)));
-        }else {
-            //item was not root, we must find the item and remove it from the appropriate parent
-            TodoItem parent = item.getParent();
-
-            parent = parent.getRoot();
-
-            if(items.contains(parent)){
-                //this is convoluted, but basically we're finding the descendant in the items list,
-                //then getting the parent, then removing the descendant from the parent's children
-                items.get(items.indexOf(parent)).findDescendant(item).getParent().removeChild(item);
-            }
-        }
-        reDrawList();
+    private void reSetDescriptText(TodoItem item){
+        descriptText.setText(item.getTask() + ":\n\n" + item.getDescription());
     }
 
     private void initializeList() {
@@ -218,7 +213,8 @@ public class TodoApp {
             itemsPanel.add(label);
             itemsPanel.add(label.getCheckBox());
         }
-        itemsPanel.setPreferredSize(new Dimension(frame.getWidth() - 50, itemLabels.size() * 20));
+
+        itemsPanel.setPreferredSize(new Dimension(framePrefWidth + 5, itemLabels.size() * 20));
     }
 
     private void reDrawList(){
@@ -239,6 +235,9 @@ public class TodoApp {
         int returnValue = fileChooser.showSaveDialog(null);
         if(returnValue == JFileChooser.APPROVE_OPTION){
             File selectedFile = fileChooser.getSelectedFile();
+            if (!selectedFile.getName().endsWith(".txt")) {
+                selectedFile = new File(selectedFile.getAbsolutePath() + ".txt");
+            }
 
             TodoListManager.saveList(selectedFile, items);
         }
@@ -267,27 +266,58 @@ public class TodoApp {
         itemLabels.clear();
         itemsPanel.removeAll();
         descriptText.setText("");
+        framePrefWidth = 0;
         reDrawList();
     }
 
     private void addNewItem() {
         ItemDialog itemDialog = new ItemDialog(frame, item -> {
+            reSetDescriptText(item);
             items.add(item);
         });
+
         itemDialog.setVisible(true);
         reDrawList();
     }
 
-    public void addItemLabel(TodoLabel itemLabel, TodoItem item, int offset) {
+    private void deleteItem(TodoItem item) {
+        descriptText.setText("");
+
+        if(item.getParent() == null){ //item is root item
+            items.remove(items.get(items.indexOf(item)));
+        }else {
+            //item was not root, we must find the item and remove it from the appropriate parent
+            TodoItem parent = item.getParent();
+
+            parent = parent.getRoot();
+
+            if(items.contains(parent)){
+                //this is convoluted, but basically we're finding the descendant in the items list,
+                //then getting the parent, then removing the descendant from the parent's children
+                items.get(items.indexOf(parent)).findDescendant(item).getParent().removeChild(item);
+            }
+        }
+        reDrawList();
+    }
+
+    private void addItemLabel(TodoLabel itemLabel, TodoItem item, int offset) {
         itemLabel.setText(item.getTask());
         itemLabel.addMouseListener(labelMouseAdapter);
         itemLabel.setItem(item);
         itemLabels.add(itemLabel);
 
         int index = itemLabels.indexOf(itemLabel);
+        FontMetrics metrics = itemLabel.getFontMetrics(itemLabel.getFont());
+        int textWidth = metrics.stringWidth(itemLabel.getText());
 
-        itemLabel.setBounds(20 + (15 * offset), 20 * index, 200, 20);
+        itemLabel.setBounds(20 + (15 * offset), 20 * index, textWidth, 20);
         itemLabel.getCheckBox().setBounds(itemLabel.getX() - 20, itemLabel.getY(), 20, 20);
+        //set textWidth to match the total width that it truly occupies in the frame
+        textWidth = textWidth + (20 + (15 * offset));
+
+        if (textWidth > framePrefWidth){
+            framePrefWidth = textWidth;
+        }
 
         if(!item.getChildren().isEmpty()){
             ArrayList<TodoItem> children = item.getChildren();
