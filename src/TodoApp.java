@@ -8,7 +8,6 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.ArrayList;
 
-
 public class TodoApp {
     private ArrayList<TodoItem> items = new ArrayList<>();
     private ArrayList<TodoLabel> itemLabels = new ArrayList<>();
@@ -138,8 +137,10 @@ public class TodoApp {
             @Override
             public void windowOpened(WindowEvent e){
                 //todo: add code to check if preference to load default file is set to true
-                items = TodoListManager.loadList(new File(ConfigManager.lastFileLoaded));
+                File file = new File(ConfigManager.lastFileLoaded);
+                items = TodoListManager.loadList(file);
                 reDrawList();
+                frame.setTitle(file.getName().replaceAll(".txt", ""));
             }
             @Override
             public void windowClosing(WindowEvent e) {
@@ -277,6 +278,7 @@ public class TodoApp {
             newTodoList();
             items = newList;
             reDrawList();
+            frame.setTitle(selectedFile.getName().replaceAll(".txt", ""));
         }
     }
 
