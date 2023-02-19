@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class TodoItem {
     private TodoItem parent;
-    private ArrayList<TodoItem> children;
+    private final ArrayList<TodoItem> children;
 
     private String task;
     private String description;
@@ -63,16 +63,6 @@ public class TodoItem {
 
     public ArrayList<TodoItem> getChildren() {
         return children;
-    }
-
-    public ArrayList<TodoItem> getFamily(){//neat function but so far not-needed, consider removing
-        ArrayList<TodoItem> list = new ArrayList<>(this.getChildren());
-
-        for (TodoItem item : children) {
-            list.addAll(item.getFamily());
-        }
-
-        return list;
     }
 
     public TodoItem getRoot(){

@@ -3,12 +3,13 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.ArrayList;
 
 
 public class TodoApp {
-
     private ArrayList<TodoItem> items = new ArrayList<>();
     private ArrayList<TodoLabel> itemLabels = new ArrayList<>();
 
@@ -133,6 +134,19 @@ public class TodoApp {
             addNewItem();
         });
 
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowOpened(WindowEvent e){
+                //todo: add code to check if preference to load default file is set to true
+                items = TodoListManager.loadList(new File(ConfigManager.lastFileLoaded));
+                reDrawList();
+            }
+            @Override
+            public void windowClosing(WindowEvent e) {
+//                ConfigManager.getInstance().setPreference();
+            }
+        });
+
         //Right click popup
         editItemPop.addActionListener(e -> {
             if(popupMenu.getInvoker() instanceof TodoLabel){
@@ -147,6 +161,7 @@ public class TodoApp {
                     });
                     itemDialog.setEditorFields(itemLabels.get(index).getItem());
                     itemDialog.setVisible(true);
+                    reDrawList();
                 }
             }
         });
@@ -200,7 +215,7 @@ public class TodoApp {
     }
 
     private void reSetDescriptText(TodoItem item){
-        descriptText.setText(item.getTask() + ":\n\n" + item.getDescription());
+        descriptText.setText(item.getTask() + ";\n\n" + item.getDescription());
     }
 
     private void initializeList() {
@@ -228,6 +243,8 @@ public class TodoApp {
     private void saveTodoList() {
         JFileChooser fileChooser = new JFileChooser();
 
+        fileChooser.setCurrentDirectory(new File(ConfigManager.DEFAULT_FOLDER_LOCATION));
+
         FileNameExtensionFilter filter = new FileNameExtensionFilter("Text files", "txt");
         fileChooser.setAcceptAllFileFilterUsed(false);
         fileChooser.addChoosableFileFilter(filter);
@@ -245,6 +262,8 @@ public class TodoApp {
 
     private void loadTodoList() {
         JFileChooser fileChooser = new JFileChooser();
+
+        fileChooser.setCurrentDirectory(new File(ConfigManager.DEFAULT_FOLDER_LOCATION));
 
         FileNameExtensionFilter filter = new FileNameExtensionFilter("Text files", "txt");
         fileChooser.setAcceptAllFileFilterUsed(false);
