@@ -322,6 +322,7 @@ public class TodoApp {
 
             TodoListManager.saveList(selectedFile, items);
             frame.setTitle(selectedFile.getName().replaceAll(".txt", ""));
+            ConfigManager.lastFileLoaded = selectedFile.getAbsolutePath();
             isSaved = true;
         }
     }
