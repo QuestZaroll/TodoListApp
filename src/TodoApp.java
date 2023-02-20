@@ -1,10 +1,7 @@
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.io.File;
 import java.util.ArrayList;
 
@@ -32,37 +29,12 @@ public class TodoApp {
     private JMenuItem subItemPop = new JMenuItem("Add sub-item");
     private JMenuItem deleteItemPop = new JMenuItem("Delete");
 
-    private MouseAdapter labelMouseAdapter = new MouseAdapter() {
-        @Override
-        public void mouseClicked(MouseEvent e) {
-            if(e.getButton() == 1){//left click
-                if(e.getSource().getClass() == TodoLabel.class){
-                    TodoLabel label = (TodoLabel) e.getSource();
-                    if(itemLabels.contains(label)){
-                        int index = itemLabels.indexOf(label);
-                        descriptText.setText(itemLabels.get(index).getItem().getTask() +
-                                ":\n\n" +
-                                itemLabels.get(index).getItem().getDescription());
-                    }
-                }
-            }
-            if(e.getButton() == 3){//right click
-                if(e.getSource().getClass() == TodoLabel.class) {
-                    TodoLabel label = (TodoLabel) e.getSource();
-                    popupMenu.show(label, e.getX(), e.getY());
-                }
-            }
-        }
-
-        @Override
-        public void mouseDragged(MouseEvent e) {
-            //TODO: implement dragging items
-        }
-    };
-
     private int framePrefWidth = 0;//this variable will be used to track how
     //wide we need to set the preferred width of the items panel,
     //in the case that horizontal scrolling becomes necessary
+
+    //tracks whether changes have been made to the list or not
+    boolean isSaved = true;
 
     public TodoApp(){
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -70,10 +42,11 @@ public class TodoApp {
         frame.setResizable(true);
         frame.setLocationRelativeTo(null);
 
-        fileMenu.add(saveListMenu);
-        fileMenu.add(openListMenu);
-        fileMenu.add(newListMenu);
         fileMenu.add(newItemMenu);
+        fileMenu.add(newListMenu);
+        fileMenu.add(openListMenu);
+        fileMenu.add(saveListMenu);
+
         menuBar.add(fileMenu);
         frame.setJMenuBar(menuBar);
 
@@ -139,12 +112,30 @@ public class TodoApp {
                 //todo: add code to check if preference to load default file is set to true
                 File file = new File(ConfigManager.lastFileLoaded);
                 items = TodoListManager.loadList(file);
-                reDrawList();
+                initializeList();
+                reSetDescriptText(items.get(0));
                 frame.setTitle(file.getName().replaceAll(".txt", ""));
             }
             @Override
             public void windowClosing(WindowEvent e) {
-//                ConfigManager.getInstance().setPreference();
+                if (!isSaved){
+                    int confirmed = JOptionPane.showConfirmDialog(frame,
+                            "Save them before you go?",
+                            "You have unsaved changes",
+                            JOptionPane.YES_NO_CANCEL_OPTION);
+
+                    switch (confirmed){
+                        case JOptionPane.YES_OPTION:
+                            saveTodoList();
+                            frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+                            break;
+                        case JOptionPane.NO_OPTION:
+                            frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+                            break;
+                        default:
+                            frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                    }
+                }
             }
         });
 
@@ -237,8 +228,15 @@ public class TodoApp {
         itemsPanel.removeAll();
         itemLabels.clear();
         initializeList();
+        isSaved = false;
         frame.validate();
         frame.repaint();
+
+        if(!frame.getTitle().startsWith("*")){
+            frame.setTitle("*" + frame.getTitle());
+        }
+
+        //putting this here for now as this is only called once a change is made to a file
     }
 
     private void saveTodoList() {
@@ -258,6 +256,8 @@ public class TodoApp {
             }
 
             TodoListManager.saveList(selectedFile, items);
+            frame.setTitle(selectedFile.getName().replaceAll(".txt", ""));
+            isSaved = true;
         }
     }
 
@@ -277,8 +277,9 @@ public class TodoApp {
             ArrayList<TodoItem> newList = TodoListManager.loadList(selectedFile);
             newTodoList();
             items = newList;
-            reDrawList();
+            initializeList();
             frame.setTitle(selectedFile.getName().replaceAll(".txt", ""));
+            isSaved = true;
         }
     }
 
@@ -288,7 +289,9 @@ public class TodoApp {
         itemsPanel.removeAll();
         descriptText.setText("");
         framePrefWidth = 0;
-        reDrawList();
+        initializeList(); //to reset scrollbar
+        frame.validate();
+        frame.repaint();
     }
 
     private void addNewItem() {
@@ -321,10 +324,48 @@ public class TodoApp {
         reDrawList();
     }
 
+    //listeners for labels and method to add label to frame
+
+    private MouseAdapter labelMouseAdapter = new MouseAdapter() {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            if(e.getButton() == 1){//left click
+                if(e.getSource().getClass() == TodoLabel.class){
+                    TodoLabel label = (TodoLabel) e.getSource();
+                    if(itemLabels.contains(label)){
+                        int index = itemLabels.indexOf(label);
+                        reSetDescriptText(itemLabels.get(index).getItem());
+                    }
+                }
+            }
+            if(e.getButton() == 3){//right click
+                if(e.getSource().getClass() == TodoLabel.class) {
+                    TodoLabel label = (TodoLabel) e.getSource();
+                    popupMenu.show(label, e.getX(), e.getY());
+                }
+            }
+        }
+
+        @Override
+        public void mouseDragged(MouseEvent e) {
+            //TODO: implement dragging items
+        }
+    };
+
     private void addItemLabel(TodoLabel itemLabel, TodoItem item, int offset) {
         itemLabel.setText(item.getTask());
         itemLabel.addMouseListener(labelMouseAdapter);
         itemLabel.setItem(item);
+
+        itemLabel.getCheckBox().addActionListener(e -> {
+            itemLabel.getItem().setDone(itemLabel.getCheckBox().isSelected());
+            isSaved = false;
+
+            if(!frame.getTitle().startsWith("*")){
+                frame.setTitle("*" + frame.getTitle());
+            }
+        });
+
         itemLabels.add(itemLabel);
 
         int index = itemLabels.indexOf(itemLabel);
