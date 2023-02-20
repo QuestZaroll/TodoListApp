@@ -19,9 +19,11 @@ public class TodoApp {
     private JMenuBar menuBar = new JMenuBar();
 
     private JMenu fileMenu = new JMenu("File");
-    private JMenuItem saveListMenu = new JMenuItem("Save List");
+    private JMenuItem saveAsListMenu = new JMenuItem("Save as...");
+    private JMenuItem saveListMenu = new JMenuItem("Save");
     private JMenuItem openListMenu = new JMenuItem("Open List");
     private JMenuItem newListMenu = new JMenuItem("New List");
+    //move this menu item to a new menu "List" which will provide options for manipulating the current list
     private JMenuItem newItemMenu = new JMenuItem("New Item");
 
     private JPopupMenu popupMenu = new JPopupMenu();
@@ -35,6 +37,9 @@ public class TodoApp {
 
     //tracks whether changes have been made to the list or not
     boolean isSaved = true;
+    //tracks whether this is a newly created list. used to see if we need to call "Save As" function on pressing
+    //save menu item, as a newly created list will have the last file loaded set to null.
+    boolean isNewList = true;
 
     public TodoApp(){
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -46,6 +51,7 @@ public class TodoApp {
         fileMenu.add(newListMenu);
         fileMenu.add(openListMenu);
         fileMenu.add(saveListMenu);
+        fileMenu.add(saveAsListMenu);
 
         menuBar.add(fileMenu);
         frame.setJMenuBar(menuBar);
@@ -93,14 +99,65 @@ public class TodoApp {
         //listeners
 
         //File menu
+        saveAsListMenu.addActionListener(e -> {
+            saveAsTodoList();
+        });
         saveListMenu.addActionListener(e -> {
-            saveTodoList();
+            if(!isNewList){
+                saveTodoList();
+            }else{
+                saveAsTodoList();
+            }
+
         });
         openListMenu.addActionListener(e ->{
-            loadTodoList();
+            if(!isSaved){
+                int response = JOptionPane.showConfirmDialog(frame,
+                        "Save list before loading new list?",
+                        "You have unsaved changes",
+                        JOptionPane.YES_NO_CANCEL_OPTION);
+
+                    switch (response){
+                        case JOptionPane.YES_OPTION:
+                            if(isNewList){
+                                saveAsTodoList();
+                                loadTodoList();
+                            }else {
+                                saveTodoList();
+                                loadTodoList();
+                            }
+                            break;
+                        case JOptionPane.NO_OPTION:
+                            loadTodoList();
+                            break;
+                        default:
+                            break;
+                    }
+                }else {
+                loadTodoList();
+            }
         });
         newListMenu.addActionListener(e -> {
-            newTodoList();
+            if(!isSaved){
+                int response = JOptionPane.showConfirmDialog(frame,
+                        "Save list before creating new list?",
+                        "You have unsaved changes",
+                        JOptionPane.YES_NO_CANCEL_OPTION);
+                switch (response){
+                    case JOptionPane.YES_OPTION:
+                        saveTodoList();
+                        newTodoList();
+                        break;
+                    case JOptionPane.NO_OPTION:
+                        newTodoList();
+                        break;
+                    default:
+                        break;
+                }
+            }else{
+                newTodoList();
+            }
+
         });
         newItemMenu.addActionListener(e -> {
             addNewItem();
@@ -119,14 +176,14 @@ public class TodoApp {
             @Override
             public void windowClosing(WindowEvent e) {
                 if (!isSaved){
-                    int confirmed = JOptionPane.showConfirmDialog(frame,
+                    int response = JOptionPane.showConfirmDialog(frame,
                             "Save them before you go?",
                             "You have unsaved changes",
                             JOptionPane.YES_NO_CANCEL_OPTION);
 
-                    switch (confirmed){
+                    switch (response){
                         case JOptionPane.YES_OPTION:
-                            saveTodoList();
+                            saveAsTodoList();
                             frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
                             break;
                         case JOptionPane.NO_OPTION:
@@ -222,6 +279,7 @@ public class TodoApp {
         }
 
         itemsPanel.setPreferredSize(new Dimension(framePrefWidth + 5, itemLabels.size() * 20));
+        isNewList = false;
     }
 
     private void reDrawList(){
@@ -240,6 +298,13 @@ public class TodoApp {
     }
 
     private void saveTodoList() {
+        File file = new File(ConfigManager.lastFileLoaded);
+        TodoListManager.saveList(file, items);
+        frame.setTitle(file.getName().replaceAll(".txt", ""));
+        isSaved = true;
+    }
+
+    private void saveAsTodoList() {
         JFileChooser fileChooser = new JFileChooser();
 
         fileChooser.setCurrentDirectory(new File(ConfigManager.DEFAULT_FOLDER_LOCATION));
@@ -276,6 +341,7 @@ public class TodoApp {
 
             ArrayList<TodoItem> newList = TodoListManager.loadList(selectedFile);
             newTodoList();
+            ConfigManager.lastFileLoaded = selectedFile.getAbsolutePath();
             items = newList;
             initializeList();
             frame.setTitle(selectedFile.getName().replaceAll(".txt", ""));
@@ -284,12 +350,16 @@ public class TodoApp {
     }
 
     private void newTodoList() {
+        ConfigManager.lastFileLoaded = null;
         items.clear();
         itemLabels.clear();
         itemsPanel.removeAll();
         descriptText.setText("");
         framePrefWidth = 0;
         initializeList(); //to reset scrollbar
+        isNewList = true;
+        isSaved = true; //technically, on a new list, there's nothing left to save
+        frame.setTitle("Todo List");
         frame.validate();
         frame.repaint();
     }

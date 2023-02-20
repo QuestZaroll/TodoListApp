@@ -38,7 +38,6 @@ public class TodoListManager {
                     currentIndent++;
                 }
             }
-            ConfigManager.lastFileLoaded = file.getAbsolutePath();
         } catch (IOException e) {
             e.printStackTrace();
         }
