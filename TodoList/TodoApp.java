@@ -169,8 +169,8 @@ public class TodoApp {
             @Override
             public void windowOpened(WindowEvent e){
                 //todo: add code to check if preference to load default file is set to true
-                if(ConfigManager.lastFileLoaded != null){
-                    File file = new File(ConfigManager.lastFileLoaded);
+                File file = new File(ConfigManager.lastFileLoaded);
+                if(file.exists()){
                     items = TodoListManager.loadList(file);
                     initializeList();
                     reSetDescriptText(items.get(0));
