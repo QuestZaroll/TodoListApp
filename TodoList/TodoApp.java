@@ -5,6 +5,8 @@ import java.awt.event.*;
 import java.io.File;
 import java.util.ArrayList;
 
+// TODO: 2/20/2023 implement config manager handling user preferences
+// TODO: 2/20/2023 add "List..." menu items for manipulating list directly
 public class TodoApp {
     private ArrayList<TodoItem> items = new ArrayList<>();
     private ArrayList<TodoLabel> itemLabels = new ArrayList<>();
@@ -167,11 +169,13 @@ public class TodoApp {
             @Override
             public void windowOpened(WindowEvent e){
                 //todo: add code to check if preference to load default file is set to true
-                File file = new File(ConfigManager.lastFileLoaded);
-                items = TodoListManager.loadList(file);
-                initializeList();
-                reSetDescriptText(items.get(0));
-                frame.setTitle(file.getName().replaceAll(".txt", ""));
+                if(ConfigManager.lastFileLoaded != null){
+                    File file = new File(ConfigManager.lastFileLoaded);
+                    items = TodoListManager.loadList(file);
+                    initializeList();
+                    reSetDescriptText(items.get(0));
+                    frame.setTitle(file.getName().replaceAll(".txt", ""));
+                }
             }
             @Override
             public void windowClosing(WindowEvent e) {

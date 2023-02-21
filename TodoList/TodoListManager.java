@@ -3,6 +3,14 @@ import java.util.ArrayList;
 
 public class TodoListManager {
 
+    /*
+    due to how the file is loaded, if a return character is included in the description, the loading will throw
+    an exception due to the next line being empty. we've replaced the return character with an indicator to let
+    the program know to insert a return when it re-loads the list
+     */
+    private static final String RETURN_INDICATOR = "%RETURN%";
+    private static final char CHILD_ITEM_INDICATOR = '\t';
+
     public static ArrayList<TodoItem> loadList(File file) {
         ArrayList<TodoItem> items = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
@@ -14,6 +22,7 @@ public class TodoListManager {
                 String[] parts = line.trim().split("::");
                 String task = parts[0];
                 String description = parts[1];
+                description = description.replaceAll(RETURN_INDICATOR, "\n");
                 boolean isDone = Boolean.parseBoolean(parts[2]);
 
                 TodoItem item = new TodoItem(task, description);
@@ -47,7 +56,7 @@ public class TodoListManager {
     private static int getIndentLevel(String line) {
         int count = 0;
         for (char c : line.toCharArray()) {
-            if (c == '\t') {
+            if (c == CHILD_ITEM_INDICATOR) {
                 count++;
             } else {
                 break;
@@ -70,10 +79,12 @@ public class TodoListManager {
     private static void writeTodoItem(BufferedWriter writer, TodoItem item, int level) throws IOException {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < level; i++) {
-            sb.append("\t");
+            sb.append(CHILD_ITEM_INDICATOR);
         }
 
-        sb.append(item.getTask()).append("::").append(item.getDescription()).append("::").append(item.getIsDone());
+        String description = item.getDescription().replaceAll("\n", RETURN_INDICATOR);
+
+        sb.append(item.getTask()).append("::").append(description).append("::").append(item.getIsDone());
         writer.write(sb.toString());
         writer.newLine();
 

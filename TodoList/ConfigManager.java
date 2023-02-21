@@ -2,6 +2,7 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
+// TODO: 2/20/2023 Finish implementation of config manager, including saving and loading config preferences
 public class ConfigManager {
     private static final String CONFIG_FILE_NAME = "config.txt";
     private static ConfigManager instance;
@@ -22,8 +23,8 @@ public class ConfigManager {
 
     //default preferences
     public static final boolean DEFAULT_LOAD_LAST_FILE = true; //load last file on startup
-    public static String lastFileLoaded = "src/Lists/FinishingTouches.txt";//will be loaded from config, if exists
-    public static final String DEFAULT_FOLDER_LOCATION = "src/Lists";
+    public static String lastFileLoaded = "TodoList" + File.separator + "Lists" + File.separator + "FinishingTouches.txt";//will be loaded from config, if exists
+    public static final String DEFAULT_FOLDER_LOCATION = "TodoList" + File.separator + "Lists";
 
     private ConfigManager() {
         // Load preferences from file when the ConfigManager is created
