@@ -25,7 +25,9 @@ public class TodoApp {
     private JMenuItem saveListMenu = new JMenuItem("Save");
     private JMenuItem openListMenu = new JMenuItem("Open List");
     private JMenuItem newListMenu = new JMenuItem("New List");
-    //move this menu item to a new menu "List" which will provide options for manipulating the current list
+    private JMenuItem preferencesMenu = new JMenuItem("Preferences");
+
+    private JMenu listMenu = new JMenu("List");
     private JMenuItem newItemMenu = new JMenuItem("New Item");
 
     private JPopupMenu popupMenu = new JPopupMenu();
@@ -36,9 +38,11 @@ public class TodoApp {
     private int framePrefWidth = 0;//this variable will be used to track how
     //wide we need to set the preferred width of the items panel,
     //in the case that horizontal scrolling becomes necessary
+    //it's changed during initialization in the addItemLabel method.
 
     //tracks whether changes have been made to the list or not
     boolean isSaved = true;
+
     //tracks whether this is a newly created list. used to see if we need to call "Save As" function on pressing
     //save menu item, as a newly created list will have the last file loaded set to null.
     boolean isNewList = true;
@@ -49,13 +53,16 @@ public class TodoApp {
         frame.setResizable(true);
         frame.setLocationRelativeTo(null);
 
-        fileMenu.add(newItemMenu);
         fileMenu.add(newListMenu);
         fileMenu.add(openListMenu);
         fileMenu.add(saveListMenu);
         fileMenu.add(saveAsListMenu);
 
+        listMenu.add(newItemMenu);
+        listMenu.add(preferencesMenu);
+
         menuBar.add(fileMenu);
+        menuBar.add(listMenu);
         frame.setJMenuBar(menuBar);
 
         popupMenu.add(editItemPop);
@@ -102,13 +109,13 @@ public class TodoApp {
 
         //File menu
         saveAsListMenu.addActionListener(e -> {
-            saveAsTodoList();
+            showSaveDialog();
         });
         saveListMenu.addActionListener(e -> {
             if(!isNewList){
                 saveTodoList();
             }else{
-                saveAsTodoList();
+                showSaveDialog();
             }
 
         });
@@ -122,7 +129,7 @@ public class TodoApp {
                     switch (response){
                         case JOptionPane.YES_OPTION:
                             if(isNewList){
-                                saveAsTodoList();
+                                showSaveDialog();
                                 loadTodoList();
                             }else {
                                 saveTodoList();
@@ -165,16 +172,23 @@ public class TodoApp {
             addNewItem();
         });
 
+        preferencesMenu.addActionListener(e -> {
+            showPreferencesConfig();
+        });
+
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowOpened(WindowEvent e){
                 //todo: add code to check if preference to load default file is set to true
-                File file = new File(ConfigManager.lastFileLoaded);
-                if(file.exists()){
-                    items = TodoListManager.loadList(file);
-                    initializeList();
-                    reSetDescriptText(items.get(0));
-                    frame.setTitle(file.getName().replaceAll(".txt", ""));
+                String loadLastFile = ConfigManager.getInstance().getPreference(ConfigManager.LOAD_LAST_FILE, String.valueOf(ConfigManager.DEFAULT_LOAD_LAST_FILE));
+                if(Boolean.parseBoolean(loadLastFile)){
+                    File file = new File(ConfigManager.getInstance().getPreference(ConfigManager.LAST_FILE, null));
+                    if(file.exists()){
+                        items = TodoListManager.loadList(file);
+                        initializeList();
+                        reSetDescriptText(items.get(0));
+                        frame.setTitle(file.getName().replaceAll(".txt", ""));
+                    }
                 }
             }
             @Override
@@ -187,7 +201,7 @@ public class TodoApp {
 
                     switch (response){
                         case JOptionPane.YES_OPTION:
-                            saveAsTodoList();
+                            showSaveDialog();
                             frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
                             break;
                         case JOptionPane.NO_OPTION:
@@ -267,6 +281,22 @@ public class TodoApp {
         });
     }
 
+    private void showPreferencesConfig() {
+        // TODO: 2/21/2023 implement new dialog allowing you to edit config preferences
+        /*
+        show config
+        load current preferences, if none are found, load defaults
+        allow user to set preferences
+        on dialog close, save preferences
+        include "reset to default" button with "are you sure?!!??!!?!" confirmation
+        redraw list to update any changes made to style
+
+        to implement default file location you will need to have a JFileChooser popup as well
+         */
+        ConfigDialog dialog = new ConfigDialog(frame);
+        dialog.setVisible(true);
+    }
+
     private void reSetDescriptText(TodoItem item){
         descriptText.setText(item.getTask() + ";\n\n" + item.getDescription());
     }
@@ -297,21 +327,22 @@ public class TodoApp {
         if(!frame.getTitle().startsWith("*")){
             frame.setTitle("*" + frame.getTitle());
         }
-
-        //putting this here for now as this is only called once a change is made to a file
     }
 
+    //consider refactoring to accept a File and save it based on that file, then calling this method in the
+    //showSaveDialog method instead of the current code. remember, DRY!
     private void saveTodoList() {
-        File file = new File(ConfigManager.lastFileLoaded);
+        File file = new File(ConfigManager.getInstance().getPreference(ConfigManager.LAST_FILE, null));
         TodoListManager.saveList(file, items);
         frame.setTitle(file.getName().replaceAll(".txt", ""));
         isSaved = true;
     }
 
-    private void saveAsTodoList() {
+    private void showSaveDialog() {
         JFileChooser fileChooser = new JFileChooser();
 
-        fileChooser.setCurrentDirectory(new File(ConfigManager.DEFAULT_FOLDER_LOCATION));
+        File defaultFolder = new File(ConfigManager.getInstance().getPreference(ConfigManager.DEFAULT_FOLDER, ConfigManager.DEFAULT_FOLDER_LOCATION));
+        fileChooser.setCurrentDirectory(defaultFolder);
 
         FileNameExtensionFilter filter = new FileNameExtensionFilter("Text files", "txt");
         fileChooser.setAcceptAllFileFilterUsed(false);
@@ -326,7 +357,7 @@ public class TodoApp {
 
             TodoListManager.saveList(selectedFile, items);
             frame.setTitle(selectedFile.getName().replaceAll(".txt", ""));
-            ConfigManager.lastFileLoaded = selectedFile.getAbsolutePath();
+            ConfigManager.getInstance().setPreference(ConfigManager.LAST_FILE, selectedFile.getAbsolutePath());
             isSaved = true;
         }
     }
@@ -334,7 +365,8 @@ public class TodoApp {
     private void loadTodoList() {
         JFileChooser fileChooser = new JFileChooser();
 
-        fileChooser.setCurrentDirectory(new File(ConfigManager.DEFAULT_FOLDER_LOCATION));
+        File defaultFolder = new File(ConfigManager.getInstance().getPreference(ConfigManager.DEFAULT_FOLDER, ConfigManager.DEFAULT_FOLDER_LOCATION));
+        fileChooser.setCurrentDirectory(defaultFolder);
 
         FileNameExtensionFilter filter = new FileNameExtensionFilter("Text files", "txt");
         fileChooser.setAcceptAllFileFilterUsed(false);
@@ -346,7 +378,7 @@ public class TodoApp {
 
             ArrayList<TodoItem> newList = TodoListManager.loadList(selectedFile);
             newTodoList();
-            ConfigManager.lastFileLoaded = selectedFile.getAbsolutePath();
+            ConfigManager.getInstance().setPreference(ConfigManager.LAST_FILE, selectedFile.getAbsolutePath());
             items = newList;
             initializeList();
             frame.setTitle(selectedFile.getName().replaceAll(".txt", ""));
@@ -355,7 +387,7 @@ public class TodoApp {
     }
 
     private void newTodoList() {
-        ConfigManager.lastFileLoaded = null;
+        ConfigManager.getInstance().setPreference(ConfigManager.LAST_FILE, null);
         items.clear();
         itemLabels.clear();
         itemsPanel.removeAll();
@@ -404,7 +436,7 @@ public class TodoApp {
     private MouseAdapter labelMouseAdapter = new MouseAdapter() {
         @Override
         public void mouseClicked(MouseEvent e) {
-            if(e.getButton() == 1){//left click
+            if(e.getButton() == MouseEvent.BUTTON1){//left click
                 if(e.getSource().getClass() == TodoLabel.class){
                     TodoLabel label = (TodoLabel) e.getSource();
                     if(itemLabels.contains(label)){
@@ -413,7 +445,7 @@ public class TodoApp {
                     }
                 }
             }
-            if(e.getButton() == 3){//right click
+            if(e.getButton() == MouseEvent.BUTTON3){//right click
                 if(e.getSource().getClass() == TodoLabel.class) {
                     TodoLabel label = (TodoLabel) e.getSource();
                     popupMenu.show(label, e.getX(), e.getY());

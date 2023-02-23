@@ -1,0 +1,3 @@
+Default Folder=TodoList\Lists
+Last File Loaded=V:\ProgrammingProjects\TodoList\TodoList\TodoList\Lists\FinishingTouches.txt
+Load Last File=true

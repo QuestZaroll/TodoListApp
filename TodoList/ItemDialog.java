@@ -6,7 +6,7 @@ public class ItemDialog extends JDialog {
     private JTextArea descriptionArea;
     private JButton okButton;
     private JButton cancelButton;
-    private ItemDialogListener listener;
+    private ItemDialogListener listener;//is this used..?
 
     public ItemDialog(JFrame parent, ItemDialogListener listener){
         super(parent, "Todo Item Editor", true);
